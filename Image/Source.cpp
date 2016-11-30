@@ -2,6 +2,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/features2d.hpp>
 #include <stdio.h>
 #include <string>
 
@@ -10,61 +11,35 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
+	namedWindow("Picture", WINDOW_AUTOSIZE);
+
+	Mat frame = imread("C:/Users/brimy/OneDrive/Pictures/Hamiltonex.jpg");
+	imshow("Picture", frame);
 	
-	int r, g, b;
 
-	Mat frame[3]; 
-	Mat compareImage[3];
-	Mat wholeFrame, compare;
-
-	compare = imread("c:/users/brimy/desktop/resources/Code/Personal Projects/Resources/human.jpg");
-	cvtColor(compare, compare,CV_RGB2YCrCb);
-	split(compare, compareImage);
-
-	for (int i = 0; i < 3; i ++) {
-		namedWindow(to_string(i),WINDOW_AUTOSIZE);
-		imshow(to_string(i),compareImage[i]);
-	}
-
-
-	VideoCapture cap(0);
-	if (!cap.isOpened()) {
-		return -1;
-	}
+	vector<Vec3f> nodes;
 
 	
-	while (true) {
-		if(waitKey(1)>0) break;
+
+	cvtColor(frame, frame, CV_RGB2GRAY);
+
+	HoughCircles(frame, nodes, CV_HOUGH_GRADIENT, 2, 100);
+
+	Mat verticies(frame.size(), CV_8U);
+
+	for (size_t i = 0; i < nodes.size(); i++) {
+		Point center(cvRound(nodes[i][0]), cvRound(nodes[i][1]));
+		int radius = cvRound(nodes[i][2]);
+
+		circle(verticies, center, radius, Scalar(255,255,255), 4);
+
 	}
 
-	while (true) {
-		
-		cap >> wholeFrame;
-		cvtColor(wholeFrame, wholeFrame, CV_RGB2YCrCb);
-		split(wholeFrame, frame);
-		
-		
+	//Canny(frame,edges,300,800,5);
+	imshow("Picture", verticies);
 
-		for (int i = 0; i < 3; i++) {
-			namedWindow(to_string(i), WINDOW_AUTOSIZE);
-			imshow(to_string(i), frame[i]);
-		}
-		
-		double sum = 0;
-		for (int i = 0; i < 3; i++) {
-			sum = sum + comparison(compareImage[i], frame[i]);
-		}
-		cout << sum;
 
-		if (waitKey(1) >= 0) break;
-	}
-	
-	//waitKey(0);
-
-	return 0;
-}
-
-double comparison(Mat reference, Mat video) {
+	waitKey(0);
 
 	return 0;
 }
