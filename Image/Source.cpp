@@ -84,10 +84,17 @@ void process(String path = "../graph.png") {
 }
 
 bool insideQuad(Point corners[4],Point test) {
-	//Top line will be corners[0][0] and corners[1][0]
 	double lengths[4];
 
-	for () {}
+	for (int i = 0; i < 4; i ++) {
+		
+		lengths[i] = dist(corners[i],test);
+	}
+
+	double area = 0;
+	for (int i = 0; i < 4; i ++) {
+		area = area + heron(lengths[i], lengths[(i+1)%4],dist(corners[i],corners[(i+1)%4]));
+	}
 
 
 
@@ -95,9 +102,11 @@ bool insideQuad(Point corners[4],Point test) {
 	
 }
 
-double herons(double sides[3]) {
+double heron(double a, double b, double c) {
 	double semisum = 0;
 	
+	double sides[3] = { a,b,c };
+
 	for (int i = 1; i < 3;i++) {
 		semisum = semisum + sides[i] / 2;
 	
@@ -110,4 +119,10 @@ double herons(double sides[3]) {
 	}
 
 	return sqrt(inside);
+}
+
+double dist(Point a, Point b) {
+	double x = pow(double(a.x - b.x), 2);
+	double y = pow(double(a.y - b.y), 2);
+	return sqrt(x+y);
 }
