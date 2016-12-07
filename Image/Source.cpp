@@ -18,35 +18,80 @@ int main(int argc, char** argv)
 }
 
 void process(String path = "../graph.png") {
+	
+	//
 	namedWindow("Picture", WINDOW_AUTOSIZE);
 	namedWindow("Lines", WINDOW_AUTOSIZE);
 
+	//Shows picture from read location
 	Mat frame = imread(path);
 	imshow("Picture", frame);
 
+	/*
+	
+	These vectors are named after graph theory notation where
+	edges are referred  to by U and verticies V
 
+	*/
 	vector<Vec3f> v;
 	vector<Vec4i> u;
 
+	//Converts picture to greyscale for processing
 	cvtColor(frame, frame, CV_RGB2GRAY);
 
+	//Creates a new Mat for holding edges detected in the picture
 	Mat edges(frame.size(), CV_8U);
+	
+	/*
+	
+	Bigger sizes of the Sobel filter are better at picking up text
+	which is usually high contrast
 
+	300 and 800 were determined empirically
+	*/
+	//Runs edge detect on the picture
 	Canny(frame, edges, 300, 800, 5);
 
+	//Detects circles in the image and writes them onto v
 	HoughCircles(frame, v, CV_HOUGH_GRADIENT, 2, 150);
 
+	//Creates a picture on which v will be drawn
+	//Useful for visualization
 	Mat verticies(frame.size(), CV_8U);
 
+	//Runs through every point in V and draws them on the image
 	for (size_t i = 0; i < v.size(); i++) {
+
 		Point center(cvRound(v[i][0]), cvRound(v[i][1]));
+
+		//Makes the radius a little bit bigger to increase the chances of finding a hard to see edge
 		v[i][2] = 1.25*cvRound(v[i][2]);
 		int radius = v[i][2];
 
 		circle(verticies, center, radius, Scalar(0, 0, 255), 4);
 	}
 
+	/*
+	
+	HoughLinesP is more useful than HoughLines because HoughLinesP will return endpoints instead of point and angle
+	
+	This allows us to more easily determine if an edge exists between two verticies
+	consider the following graph
+
+	O--O--O
+	 \   /
+	  \ /
+	   O
+	
+	HoughLines will give only a point and an angle, therefore the algorithm will consider the top left 
+	and top right directly connected even though they aren't
+	However, HoughLinesP will return endpoints that likely lie within a reigon between the top left and top middle etc.
+	
+	*/
+
+	//
 	HoughLinesP(edges, u, 1, CV_PI / 180, 50, 50, 10);
+	
 	Mat lines(frame.size(), CV_8U);
 
 	for (size_t i = 0; i < u.size(); i++) {
