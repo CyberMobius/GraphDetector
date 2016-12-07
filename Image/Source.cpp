@@ -7,15 +7,13 @@
 #include <math.h> 
 #include <String.h>
 
+
+
 using namespace cv;
 using namespace std;
 
-int main(int argc, char** argv)
-{
-
-
-	return 1;
-}
+const int HERON = 0;
+const int AB_SIN = 1;
 
 void process(String path = "../graph.png") {
 	
@@ -74,9 +72,9 @@ void process(String path = "../graph.png") {
 	/*
 	
 	HoughLinesP is more useful than HoughLines because HoughLinesP will return endpoints instead of point and angle
-	
 	This allows us to more easily determine if an edge exists between two verticies
-	consider the following graph
+
+	Consider the following graph:
 
 	O--O--O
 	 \   /
@@ -91,24 +89,40 @@ void process(String path = "../graph.png") {
 
 	//
 	HoughLinesP(edges, u, 1, CV_PI / 180, 50, 50, 10);
-	
-	Mat lines(frame.size(), CV_8U);
 
 	for (size_t i = 0; i < u.size(); i++) {
 
 		Vec4i l = u[i];
+		//Writes each detected line onto the image containing each vetrtex
 		line(verticies, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, CV_AA);
 
 	}
-	//imshow("Lines",lines);
+	//Shows the fully computer vision processed image
 	imshow("Picture", verticies);
 	Point v1;
 	Point v2;
 
+	/*
+	
+	In order to start assigning edges to particular verticies, a quadilateral reigon is created
+	from each vertex to every other vertex which results in (v^2-v)/2 reigons.
+	Each one of the 
+
+	In each of the reigons every line will be inspected to see if both of its endpoints lie within
+	the reigon and if the length of the line is 75% as long as the distance between the two verticies
+
+	*/
+
 	for (int i = 0; i < v.size(); i++) {
 		for (int j = i + 1; i < v.size(); i++) {
+			double theta;
+			bool unsorted;
 
-			if (v[i][0] < v[j][0]) {
+			if (v[i][0] == u[j][0]) {
+				theta = -90;
+				unsorted = false;
+			}
+			else if (v[i][0] < v[j][0] || !unsorted) {
 				v1 = Point(v[i][0], v[i][1]);
 				v2 = Point(v[j][0], v[j][1]);
 			}
@@ -118,6 +132,7 @@ void process(String path = "../graph.png") {
 			}
 
 			for (int k = 0; k < u.size(); k++) {
+				
 
 
 
@@ -174,7 +189,7 @@ bool insideQuad(Point corners[4],Point test) {
 		double sides[3] = { lengths[i], lengths[(i + 1) % 4],dist(corners[i],corners[(i + 1) % 4]) };
 		
 		//Adds on additional area
-		area = area + heron(sides);
+		area = area + trigArea(sides);
 	}
 
 	/*
@@ -210,7 +225,7 @@ bool insideQuad(Point corners[4],Point test) {
 
 	//Compares the area of the quadilateral to the area of the triangles
 	//Using sqrt leaves room for floating point and round error so use small epsilon
-	if (abs(heron(quadLengths[1]) + heron(quadLengths[0]) - area) < .00001) {
+	if (abs(trigArea(quadLengths[1]) + trigArea(quadLengths[0]) - area) < .00001) {
 		return true;
 	}
 	else {
@@ -220,27 +235,42 @@ bool insideQuad(Point corners[4],Point test) {
 
 }
 
-double heron(double sides[3]) {
-	//"https://en.wikipedia.org/wiki/Heron's_formula"
-	double semisum = 0;
+double trigArea(double constraints[3], int method = HERON) {
+	if (method == HERON) {
+		//"https://en.wikipedia.org/wiki/Heron's_formula"
+		double semisum = 0;
 
-	for (int i = 1; i < 3;i++) {
-		semisum = semisum + sides[i] / 2;
-	
+		for (int i = 1; i < 3; i++) {
+			semisum = semisum + constraints[i] / 2;
+
+		}
+
+		double inside = semisum;
+
+		for (int i = 1; i < 3; i++) {
+			inside = inside * (semisum - constraints[i]);
+		}
+
+		return sqrt(inside);
 	}
-
-	double inside = semisum;
-
-	for (int i = 1; i < 3; i++) {
-		inside = inside * (semisum - sides[i]);
-	}
-
-	return sqrt(inside);
 }
 
 double dist(Point a, Point b) {
 	//https://en.wikipedia.org/wiki/Pythagorean_theorem
-	double x = pow(double(a.x - b.x), 2);
-	double y = pow(double(a.y - b.y), 2);
+	double x = double(a.x - b.x);
+	x = x * x;
+	double y = double(a.y - b.y);
+	y = y * y;
 	return sqrt(x+y);
+}
+
+double cosine(Point corner, Point topEdge, Point bottomEdge) {
+
+}
+
+int main(int argc, char** argv)
+{
+
+
+	return 1;
 }
