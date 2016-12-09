@@ -7,7 +7,7 @@
 #include <math.h> 
 #include <String.h>
 
-
+# define M_PI 3.14159265358979323846
 
 using namespace cv;
 using namespace std;
@@ -33,6 +33,8 @@ void process(String path = "../graph.png") {
 	*/
 	vector<Vec3f> v;
 	vector<Vec4i> u;
+	vector<vector<bool>> graph;
+
 
 	//Converts picture to greyscale for processing
 	cvtColor(frame, frame, CV_RGB2GRAY);
@@ -56,6 +58,7 @@ void process(String path = "../graph.png") {
 	//Creates a picture on which v will be drawn
 	//Useful for visualization
 	Mat verticies(frame.size(), CV_8U);
+
 
 	//Runs through every point in V and draws them on the image
 	for (size_t i = 0; i < v.size(); i++) {
@@ -99,8 +102,8 @@ void process(String path = "../graph.png") {
 	}
 	//Shows the fully computer vision processed image
 	imshow("Picture", verticies);
-	Point v1;
-	Point v2;
+	Point v1,v2;
+	int r1, r2;
 
 	/*
 	
@@ -113,31 +116,61 @@ void process(String path = "../graph.png") {
 
 	*/
 
+	//Row holds each row of the adjacency matrix
+	vector<bool> row;
+
+	//Looks for connections from each vertex to every other vertex
 	for (int i = 0; i < v.size(); i++) {
 		for (int j = i + 1; i < v.size(); i++) {
+
+			//Holds the angle in between two verticies
+			//Used to construct a search reigon between the two verticies
 			double theta;
+
 			bool unsorted;
 
+			//If the x coordinate is the same between two verticies, assume the angle in between it is -90
 			if (v[i][0] == u[j][0]) {
 				theta = -90;
 				unsorted = false;
 			}
+
+			//Sorts points by x coordinate for easier manipulations
 			else if (v[i][0] < v[j][0] || !unsorted) {
+				
 				v1 = Point(v[i][0], v[i][1]);
+				r1 = v[i][2];
 				v2 = Point(v[j][0], v[j][1]);
+				r2 = v[j][2];
+				theta = atan(double(v2.y-v1.y)/double(v2.x-v1.x));
 			}
 			else {
 				v2 = Point(v[i][0], v[i][1]);
+				r2 = v[i][2];
 				v1 = Point(v[j][0], v[j][1]);
+				r1 = v[j][2];
+				theta = atan(double(v2.y - v1.y) / double(v2.x - v1.x));
 			}
 
+			//Contructs the search reigon between the two veticies
+			Point corners[4];
+			corners[0] = Point(v1.x + r1 * cos(theta + M_PI/2), v1.y + r1 * sin(theta + M_PI / 2));
+			corners[1] = Point(v1.x + r1 * cos(theta - M_PI / 2), v1.y + r1 * sin(theta - M_PI / 2));
+			corners[2] = Point(v2.x + r2 * cos(theta + M_PI / 2), v2.y + r2 * sin(theta + M_PI / 2));
+			corners[3] = Point(v2.x + r2 * cos(theta - M_PI / 2), v2.y + r2 * sin(theta - M_PI / 2));
+
+			//Looks through every line to see if the endpoints lies within the section
 			for (int k = 0; k < u.size(); k++) {
-				
+				Point line[] = {Point(u[k][0],u[k][1]),Point(u[k][2],u[k][3])};
 
-
-
+				if (insideQuad(corners,line[0]) && insideQuad(corners, line[1]) && dist(line[0],line[1])>.75*dist(v1,v2)) {
+					row.push_back(true);
+				}
+				else { row.push_back(false); }
 			}
 		}
+		graph.push_back(row);
+		row.clear();
 	}
 
 	waitKey(0);
